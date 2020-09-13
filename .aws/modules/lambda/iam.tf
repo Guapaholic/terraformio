@@ -13,6 +13,8 @@ resource "aws_iam_role" "lambda_execution" {
   name = "${local.resource_namespace}-lambda-execution-role"
 
   assume_role_policy = data.aws_iam_policy_document.lambda_execution_assume_role.json
+
+  force_detach_policies = true
 }
 
 data "aws_iam_policy_document" "cloudwatch_logs" {
