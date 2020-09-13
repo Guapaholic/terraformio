@@ -1,7 +1,6 @@
 version: 2.1
 
 references:
-  terraform_live: &terraform_live_dir ~/project/.aws/live/<< parameters.stage >>
   stage_param: &stage_param
     type: enum
     enum: [dev, prod]
@@ -23,14 +22,14 @@ commands:
             source ~/project/.circleci/scripts/setup-aws-config.sh
       - run:
           command: terraform init
-          working_directory: *terraform_live_dir
+          working_directory: ~/project/.aws/live/<< parameters.stage >>
 
 jobs:
   apply_plan:
     executor: python
     parameters:
       stage: *stage_param
-    working_directory: *terraform_live_dir
+    working_directory: ~/project/.aws/live/<< parameters.stage >>
     steps:
       - prepare_tf:
           stage: << parameters.stage >>
@@ -40,7 +39,7 @@ jobs:
     executor: python
     parameters:
       stage: *stage_param
-    working_directory: *terraform_live_dir
+    working_directory: ~/project/.aws/live/<< parameters.stage >>
     steps:
       - prepare_tf:
           stage: << parameters.stage >>
