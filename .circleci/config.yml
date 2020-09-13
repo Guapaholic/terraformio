@@ -16,7 +16,7 @@ commands:
       stage: *stage_param
     steps:
       - checkout
-      - run: pip install -U awscli
+      - run: pip install awscli
       - run:
           command: |
             source ~/project/.circleci/scripts/setup-aws-config.sh
