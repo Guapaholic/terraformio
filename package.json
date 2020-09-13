@@ -6,7 +6,7 @@
   "author": "Francis <juliancruz1892@gmail.com>",
   "license": "MIT",
   "scripts": {
-    "test": "yarn jest --config ./jest.config.js"
+    "test": "yarn jest --config ./jest.config.js --silent --verbose"
   },
   "devDependencies": {
     "jest": "^26.4.2"

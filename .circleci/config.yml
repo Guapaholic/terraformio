@@ -4,13 +4,26 @@ references:
   stage_param: &stage_param
     type: enum
     enum: [dev, prod]
+  master_only_filter: &master_branch_only
+    branches:
+      only: master
+  prod_tag_filters: &prod_tag_only
+    branches:
+      ignore: /.*/
+    tags:
+      only: /prod-.*/
 
 orbs:
   aws-cli: circleci/aws-cli@1.3.0
   terraform: circleci/terraform@1.0.1
 
 executors:
-  terraform: terraform/default
+  terraform:
+    name: terraform/default
+    image: zenika/terraform-aws-cli:release-3.7_terraform-0.13.1_awscli-1.18.127
+  node:
+    docker:
+      - image: circleci/node:12.18.3
 
 commands:
   prepare_tf:
@@ -20,14 +33,14 @@ commands:
       - checkout
       - aws-cli/setup:
           aws-region: AWS_REGION
+          skip-install-check: true
+          version: 1
       - terraform/init:
           path: ~/project/.aws/live/<< parameters.stage >>
 
 jobs:
   apply_plan:
-    executor:
-      name: terraform
-      image: zenika/terraform-aws-cli:release-3.7_terraform-0.13.1_awscli-1.18.127
+    executor: terraform
     parameters:
       stage: *stage_param
     steps:
@@ -37,9 +50,7 @@ jobs:
           path: ~/project/.aws/live/<< parameters.stage >>
 
   validate_plan:
-    executor:
-      name: terraform
-      image: zenika/terraform-aws-cli:release-3.7_terraform-0.13.1_awscli-1.18.127
+    executor: terraform
     parameters:
       stage: *stage_param
     steps:
@@ -48,23 +59,53 @@ jobs:
       - terraform/plan:
           path: ~/project/.aws/live/<< parameters.stage >>
   tag_release:
-    executor: terraform/default
+    executor: node
     steps:
       - checkout
       - run: git tag prod-$(date '+%s') -m "Prod release $(date '+%c')"
       - run: git push HEAD --follow-tags
 
+    test_functions:
+      executor: node
+      environment:
+        JEST_JUNIT_OUTPUT_DIR: &junit_report_dir ~/project/reports/junit/
+      steps:
+        - checkout
+        - restore_cache:
+            keys:
+              - cache-add-junit-v1-{{ checksum "yarn.lock" }}
+              - cache-add-junit-v1-
+        - run:
+            command: |
+              yarn install --frozen-lockfile --cache-dir ~/.cache/yarn
+              yarn add -D jest-junit
+              git co yarn.lock
+            working_directory: ~/project
+        - save_cache:
+            key: cache-add-junit-v1-{{ checksum "yarn.lock" }}
+            paths:
+              - ~/.cache/yarn
+              - ~/project/node_modules/
+        - run:
+            command: |
+              mkdir -p "$JEST_JUNIT_OUTPUT_DIR"
+              yarn test --ci --runInBand --reporters=default --reporters=jest-junit
+            description: Run unit tests
+        - store_test_results:
+            path: *junit_report_dir
+        - store_artifacts:
+            path: *junit_report_dir
+
 workflows:
   deploy_dev:
     jobs:
+      - test_functions:
+          filters: *master_branch_only
       - validate_plan:
           context: deploy.dev
           name: validate_plan_dev
           stage: dev
-          filters:
-            branches:
-              only:
-                - master
+          filters: *master_branch_only
       - apply_plan:
           context: deploy.dev
           name: apply_plan_dev
@@ -83,21 +124,11 @@ workflows:
           context: deploy.dev
           name: validate_plan_prod
           stage: prod
-          filters:
-            branches:
-              ignore: /.*/
-            tags:
-              only:
-                - /prod-*/
+          filters: *prod_tag_only
       - apply_plan:
           context: deploy.dev
           name: apply_plan_prod
           stage: prod
-          filters:
-            branches:
-              ignore: /.*/
-            tags:
-              only:
-                - /prod-*/
+          filters: *prod_tag_only
           requires:
             - validate_plan_prod
