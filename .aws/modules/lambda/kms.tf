@@ -4,5 +4,5 @@ resource "aws_kms_key" "root" {
 
 resource "aws_kms_alias" "alias" {
   name = "alias/${local.resource_namespace}-kms-key"
-  target = aws_kms_key.root.key_id
+  target_key_id = aws_kms_key.root.key_id
 }

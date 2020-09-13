@@ -1,0 +1,89 @@
+version: 2.1
+
+references:
+  terraform_live: &terraform_live_dir ~/project/.aws/live/<< parameters.stage >>
+  stage_param: &stage_param
+    type: enum
+    enum: [dev, prod]
+
+executors:
+  python:
+    docker:
+      - image: circleci/python:3.8
+
+commands:
+  prepare_tf:
+    parameters:
+      stage: *stage_param
+    steps:
+      - checkout
+      - run: pip install -U awscli
+      - run:
+          command: |
+            source ~/project/.circleci/scripts/setup-aws-config.sh
+      - run:
+          command: terraform init
+          working_directory: *terraform_live_dir
+
+jobs:
+  apply_plan:
+    executor: python
+    parameters:
+      stage: *stage_param
+    working_directory: *terraform_live_dir
+    steps:
+      - prepare_tf:
+          stage: << parameters.stage >>
+      - run: terraform apply -auto-approve
+
+  validate_plan:
+    executor: python
+    parameters:
+      stage: *stage_param
+    working_directory: *terraform_live_dir
+    steps:
+      - prepare_tf:
+          stage: << parameters.stage >>
+      - run: terraform plan
+
+workflows:
+  deploy_dev:
+    jobs:
+      - validate_plan:
+          context: deploy.dev
+          name: validate_plan_dev
+          stage: dev
+          filters:
+            branches:
+              only:
+                - master
+      - apply_plan:
+          context: deploy.dev
+          name: apply_plan_dev
+          stage: dev
+          requires:
+            - validate_plan_dev
+  deploy_prod:
+    jobs:
+      - validate_plan:
+          context: deploy.dev
+          name: validate_plan_prod
+          stage: prod
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only:
+                - /prod-*/
+      - apply_plan:
+          context: deploy.dev
+          name: apply_plan_prod
+          stage: prod
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only:
+                - /prod-*/
+          requires:
+            - validate_plan_prod
