@@ -16,7 +16,7 @@ commands:
       - checkout
       - aws-cli/install
       - aws-cli/setup:
-          aws-region: us-east-1
+          aws-region: AWS_REGION
       - run:
           command: terraform init
           working_directory: ~/project/.aws/live/<< parameters.stage >>
