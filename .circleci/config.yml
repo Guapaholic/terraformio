@@ -47,6 +47,12 @@ jobs:
           stage: << parameters.stage >>
       - terraform/plan:
           path: ~/project/.aws/live/<< parameters.stage >>
+  tag_release:
+    executor: terraform/default
+    steps:
+      - checkout
+      - run: git tag prod-$(date '+%s') -m "Prod release $(date '+%c')"
+      - run: git push HEAD --follow-tags
 
 workflows:
   deploy_dev:
@@ -65,6 +71,12 @@ workflows:
           stage: dev
           requires:
             - validate_plan_dev
+      - promote_to_prod:
+          type: approval
+          requires:
+            - apply_plan_dev
+      - tag_release:
+          stage: prod
   deploy_prod:
     jobs:
       - validate_plan:
