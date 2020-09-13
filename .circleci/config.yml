@@ -5,10 +5,8 @@ references:
     type: enum
     enum: [dev, prod]
 
-executors:
-  python:
-    docker:
-      - image: circleci/python:3.8
+orbs:
+  aws-cli: circleci/aws-cli@1.3.0
 
 commands:
   prepare_tf:
@@ -16,17 +14,16 @@ commands:
       stage: *stage_param
     steps:
       - checkout
-      - run: pip install awscli
-      - run:
-          command: |
-            source ~/project/.circleci/scripts/setup-aws-config.sh
+      - aws-cli/install
+      - aws-cli/setup:
+          aws-region: us-east-1
       - run:
           command: terraform init
           working_directory: ~/project/.aws/live/<< parameters.stage >>
 
 jobs:
   apply_plan:
-    executor: python
+    executor: aws-cli/default
     parameters:
       stage: *stage_param
     steps:
@@ -37,7 +34,7 @@ jobs:
           working_directory: ~/project/.aws/live/<< parameters.stage >>
 
   validate_plan:
-    executor: python
+    executor: aws-cli/default
     parameters:
       stage: *stage_param
     steps:
