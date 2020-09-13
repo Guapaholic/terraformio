@@ -8,5 +8,5 @@ terraform {
 module "lambda" {
   source = "../../modules/lambda"
 
-  stage = "dev"
+  stage = "prod"
 }

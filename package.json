@@ -1,0 +1,8 @@
+{
+  "name": "terraformio",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/Guapaholic/terraformio.git",
+  "author": "Francis <juliancruz1892@gmail.com>",
+  "license": "MIT"
+}
