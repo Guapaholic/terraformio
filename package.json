@@ -4,5 +4,11 @@
   "main": "index.js",
   "repository": "https://github.com/Guapaholic/terraformio.git",
   "author": "Francis <juliancruz1892@gmail.com>",
-  "license": "MIT"
+  "license": "MIT",
+  "scripts": {
+    "test": "yarn jest --config ./jest.config.js"
+  },
+  "devDependencies": {
+    "jest": "^26.4.2"
+  }
 }
