@@ -27,20 +27,19 @@ jobs:
   apply_plan:
     executor:
       name: terraform
-      image: zenika/terraform-aws-cli
+      image: zenika/terraform-aws-cli:release-3.7_terraform-0.13.1_awscli-1.18.127
     parameters:
       stage: *stage_param
     steps:
       - prepare_tf:
           stage: << parameters.stage >>
-      - run:
-          command: terraform apply -auto-approve
-          working_directory: ~/project/.aws/live/<< parameters.stage >>
+      - terraform/apply:
+          path: ~/project/.aws/live/<< parameters.stage >>
 
   validate_plan:
     executor:
       name: terraform
-      image: zenika/terraform-aws-cli
+      image: zenika/terraform-aws-cli:release-3.7_terraform-0.13.1_awscli-1.18.127
     parameters:
       stage: *stage_param
     steps:
