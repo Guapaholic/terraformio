@@ -1,10 +1,10 @@
 variable "application_name" {
-  type = string
+  type        = string
   description = "Application name"
-  default = "my-first-terraform"
+  default     = "my-first-terraform"
 }
 
 variable "stage" {
-  type = string
+  type        = string
   description = "Deployment stage"
 }

@@ -7,6 +7,10 @@ references:
 
 orbs:
   aws-cli: circleci/aws-cli@1.3.0
+  terraform: circleci/terraform@1.0.1
+
+executors:
+  terraform: terraform/default
 
 commands:
   prepare_tf:
@@ -14,16 +18,16 @@ commands:
       stage: *stage_param
     steps:
       - checkout
-      - aws-cli/install
       - aws-cli/setup:
           aws-region: AWS_REGION
-      - run:
-          command: terraform init
-          working_directory: ~/project/.aws/live/<< parameters.stage >>
+      - terraform/init:
+          path: ~/project/.aws/live/<< parameters.stage >>
 
 jobs:
   apply_plan:
-    executor: aws-cli/default
+    executor:
+      name: terraform
+      image: zenika/terraform-aws-cli
     parameters:
       stage: *stage_param
     steps:
@@ -34,15 +38,16 @@ jobs:
           working_directory: ~/project/.aws/live/<< parameters.stage >>
 
   validate_plan:
-    executor: aws-cli/default
+    executor:
+      name: terraform
+      image: zenika/terraform-aws-cli
     parameters:
       stage: *stage_param
     steps:
       - prepare_tf:
           stage: << parameters.stage >>
-      - run:
-          command: terraform plan
-          working_directory: ~/project/.aws/live/<< parameters.stage >>
+      - terraform/plan:
+          path: ~/project/.aws/live/<< parameters.stage >>
 
 workflows:
   deploy_dev:
